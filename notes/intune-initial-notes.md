@@ -17,6 +17,14 @@ Establish a Microsoft Intune test environment and validate basic device enrollme
 - Apply a simple configuration profile
 - Observe and troubleshoot policy assignment behavior
 
+## Change Management
+Ticket management handled in Zammad homelab instance. All changes follow a ticketed workflow:
+1. Create ticket describing the change
+2. Document intended configuration
+3. Implement change
+4. Update ticket with results
+5. Close ticket
+
 ## Notes
 - Intune workflow is heavily group-driven; incorrect group membership is a common failure point
 - Device sync timing matters — forced sync is often required during testing
