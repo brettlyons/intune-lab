@@ -10,14 +10,21 @@ Complete a documentation-first Intune lab demonstrating device enrollment, polic
 - [x] Phase 4: Apply compliance and configuration policies
 - [ ] Phase 5: Document troubleshooting workflows
 
+## Completed Tasks
+- [x] Confirm Intune license assigned to test user
+- [x] Fix MDM enrollment (device was Entra joined but not MDM enrolled)
+- [x] Force a device sync
+- [x] Apply compliance policy (Defender requirements, NIST password)
+- [x] Apply configuration profile (Defender settings via Settings Catalog)
+- [x] Break → fix: BitLocker compliance error on VM → disabled requirement
+- [x] Update documentation with troubleshooting and lessons learned
+- [x] Add screenshots to repo
+
 ## Next Session Tasks
-- [ ] Confirm Intune license assigned to test user
-- [ ] Force a device sync from Intune console
-- [ ] Apply one compliance policy (e.g., require PIN/BitLocker)
-- [ ] Apply one configuration profile (e.g., screen lock/password requirements)
-- [ ] Break → fix one thing (intentional troubleshooting exercise)
-- [ ] Update GitHub documentation with lessons learned
 - [ ] Test automated VM deployment with autounattend.xml
+- [ ] Create bash script for one-command VM provisioning
+- [ ] Investigate BitLocker on QEMU/KVM VMs with swtpm
+- [ ] Consider dynamic device groups for automatic policy assignment
 
 ## Key Questions
 1. What compliance policies are most relevant for demonstrating real-world scenarios?
@@ -35,12 +42,11 @@ Complete a documentation-first Intune lab demonstrating device enrollment, polic
 - Azure VM default pricing (~$170/mo D2) - switched to local VM approach
 
 ## Status
-**Currently in Phase 3** - Windows 11 VM created (`win11-intune`), ready for OS installation and Intune enrollment
+**Currently in Phase 5** - Phases 1-4 complete. Device enrolled, policies applied, documentation updated.
 
-### Phase 3 Progress
-- [x] Configured libvirt default network
-- [x] Added `virtio-win` to NixOS system packages
-- [x] Created Windows 11 VM with VirtIO disk/network and TPM 2.0
-- [x] Created `autounattend.xml` for automated future installs
-- [x] Complete Windows installation (loaded VirtIO drivers manually)
-- [x] Enroll device into Intune (confirmed via dsregcmd /status)
+### Completed Infrastructure
+- Windows 11 VM (`win11-intune`) enrolled in Intune
+- Compliance policy: Defender requirements, NIST password standards
+- Configuration profile: Defender settings via Settings Catalog
+- `autounattend.xml` ready for automated VM provisioning
+- Troubleshooting docs with screenshots
