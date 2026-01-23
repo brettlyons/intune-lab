@@ -8,7 +8,7 @@ Complete a documentation-first Intune lab demonstrating device enrollment, polic
 - [x] Phase 2: Create test users and groups in Entra ID
 - [x] Phase 3: Enroll Windows test device into Intune
 - [x] Phase 4: Apply compliance and configuration policies
-- [ ] Phase 5: Document troubleshooting workflows
+- [x] Phase 5: Document troubleshooting workflows
 
 ## Completed Tasks
 - [x] Confirm Intune license assigned to test user
@@ -42,7 +42,7 @@ Complete a documentation-first Intune lab demonstrating device enrollment, polic
 - Azure VM default pricing (~$170/mo D2) - switched to local VM approach
 
 ## Status
-**Currently in Phase 5** - Phases 1-4 complete. Device enrolled, policies applied, documentation updated.
+**All phases complete.** Device enrolled, policies applied, troubleshooting documented.
 
 ### Completed Infrastructure
 - Windows 11 VM (`win11-intune`) enrolled in Intune
