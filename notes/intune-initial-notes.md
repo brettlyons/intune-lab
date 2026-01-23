@@ -8,7 +8,11 @@ Establish a Microsoft Intune test environment and validate basic device enrollme
 - Tenant: lyonsitlab.onmicrosoft.com
 - Entra ID
 - Microsoft Intune
-- Windows 10/11 test device (VM)
+- Windows 10/11 test device (local QEMU/KVM VM)
+
+### VM Options Considered
+- **Azure VM**: ~$170/mo for D2 Windows instance (Azure offers $200 free credits for new accounts)
+- **Local QEMU/KVM**: Free, requires Windows ISO from Microsoft evaluation center or existing media
 
 ## Planned Tasks
 - Create test users and groups
