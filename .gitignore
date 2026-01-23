@@ -1,0 +1,5 @@
+# Large binary files (can be regenerated - see notes/intune-initial-notes.md)
+*.iso
+
+# Temporary files
+*.img

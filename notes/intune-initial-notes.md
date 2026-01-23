@@ -85,6 +85,76 @@ sudo virsh attach-disk win11-intune /tmp/virtio-win.iso sdb --type cdrom --mode 
    - Select the driver and click OK
    - The 60GB VirtIO disk will now appear
 
+## Unattended Windows Installation
+
+**Problem**: Manual Windows installation requires multiple interactions:
+- Clicking through language/region selection
+- Manually loading VirtIO drivers when disk isn't visible
+- Partitioning the disk
+- Clicking through OOBE screens
+- Setting up user accounts
+
+This makes it tedious to spin up fresh VMs for testing, and the VirtIO driver step is easy to forget.
+
+**Solution**: Use `autounattend.xml` answer file for fully automated installation.
+
+The `autounattend.xml` in this repo automates:
+- Language/locale (en-US)
+- Skips product key (evaluation)
+- Auto-partitions disk (GPT/UEFI: EFI + MSR + Windows partitions)
+- Loads VirtIO drivers automatically (tries D:, E:, F: drive letters)
+- Auto-generates computer name
+- Skips most OOBE screens
+- Presents Microsoft/Entra ID sign-in for Intune enrollment
+
+### Creating the Combined ISO
+
+Combine `autounattend.xml` with VirtIO drivers into one ISO:
+
+```bash
+# Copy virtio drivers and autounattend.xml to temp directory
+mkdir -p /tmp/virtio-combined
+cp -r /nix/store/*-virtio-win-*/* /tmp/virtio-combined/
+cp autounattend.xml /tmp/virtio-combined/
+
+# Create ISO
+nix-shell -p cdrtools --run "mkisofs -o virtio-autounattend.iso -J -r /tmp/virtio-combined/"
+```
+
+### One-Command VM Creation (Unattended)
+
+```bash
+# Remove existing VM if present
+sudo virsh destroy win11-intune 2>/dev/null
+sudo virsh undefine win11-intune --nvram 2>/dev/null
+
+# Create VM with both ISOs - boots and installs automatically
+sudo virt-install \
+  --connect qemu:///system \
+  --name win11-intune \
+  --ram 4096 \
+  --vcpus 2 \
+  --disk size=60,bus=virtio \
+  --cdrom /home/blyons/Downloads/Win11_24H2_English_x64.iso \
+  --disk virtio-autounattend.iso,device=cdrom \
+  --os-variant win11 \
+  --network network=default,model=virtio \
+  --graphics spice \
+  --tpm backend.type=emulator,backend.version=2.0 \
+  --boot uefi \
+  --noautoconsole
+```
+
+After boot, Windows will install automatically and present the Entra ID sign-in screen. Sign in with a work account (e.g., `testuser01@lyonsitlab.onmicrosoft.com`) to join Entra ID and auto-enroll in Intune.
+
+### Intune Auto-Enrollment Prerequisites
+
+For automatic Intune enrollment when signing in with a work account:
+1. User must have Intune license (included in M365 Business Premium)
+2. MDM auto-enrollment enabled in Entra ID:
+   - https://entra.microsoft.com → Identity → Devices → Device settings
+   - Set "MDM user scope" to "All" or select security group
+
 **Network Autostart (Potential Issue):**
 - The default libvirt network may not autostart after reboot
 - If VMs fail to start with "network 'default' is not active":
