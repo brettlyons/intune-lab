@@ -6,9 +6,16 @@ Complete a documentation-first Intune lab demonstrating device enrollment, polic
 ## Phases
 - [x] Phase 1: Environment setup
 - [x] Phase 2: Create test users and groups in Entra ID
-- [ ] Phase 3: Enroll Windows test device into Intune
+- [x] Phase 3: Enroll Windows test device into Intune
 - [ ] Phase 4: Apply compliance and configuration policies
 - [ ] Phase 5: Document troubleshooting workflows
+
+## Next Session Tasks
+- [ ] Confirm Intune license assigned to test user
+- [ ] Force a device sync from Intune console
+- [ ] Apply one compliance policy (e.g., require PIN/BitLocker)
+- [ ] Apply one configuration profile (e.g., screen lock/password requirements)
+- [ ] Break → fix one thing (intentional troubleshooting exercise)
 
 ## Key Questions
 1. What compliance policies are most relevant for demonstrating real-world scenarios?
@@ -32,5 +39,6 @@ Complete a documentation-first Intune lab demonstrating device enrollment, polic
 - [x] Configured libvirt default network
 - [x] Added `virtio-win` to NixOS system packages
 - [x] Created Windows 11 VM with VirtIO disk/network and TPM 2.0
-- [ ] Complete Windows installation (load VirtIO drivers during setup)
-- [ ] Enroll device into Intune
+- [x] Created `autounattend.xml` for automated future installs
+- [x] Complete Windows installation (loaded VirtIO drivers manually)
+- [x] Enroll device into Intune (confirmed via dsregcmd /status)

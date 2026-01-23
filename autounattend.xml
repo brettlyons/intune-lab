@@ -126,17 +126,41 @@
                 <HideEULAPage>true</HideEULAPage>
                 <HideLocalAccountScreen>true</HideLocalAccountScreen>
                 <HideOEMRegistrationScreen>true</HideOEMRegistrationScreen>
-                <HideOnlineAccountScreens>false</HideOnlineAccountScreens>
+                <HideOnlineAccountScreens>true</HideOnlineAccountScreens>
                 <HideWirelessSetupInOOBE>true</HideWirelessSetupInOOBE>
                 <ProtectYourPC>3</ProtectYourPC>
             </OOBE>
 
-            <!-- Skip to Microsoft/Entra ID sign-in for Intune enrollment -->
+            <!-- Temporary local admin for initial setup - Entra join happens via script -->
+            <UserAccounts>
+                <LocalAccounts>
+                    <LocalAccount wcm:action="add">
+                        <Name>SetupAdmin</Name>
+                        <Group>Administrators</Group>
+                        <Password>
+                            <Value>TempPass123!</Value>
+                            <PlainText>true</PlainText>
+                        </Password>
+                    </LocalAccount>
+                </LocalAccounts>
+            </UserAccounts>
+
+            <AutoLogon>
+                <Enabled>true</Enabled>
+                <Username>SetupAdmin</Username>
+                <Password>
+                    <Value>TempPass123!</Value>
+                    <PlainText>true</PlainText>
+                </Password>
+                <LogonCount>1</LogonCount>
+            </AutoLogon>
+
+            <!-- Auto-launch Entra ID enrollment dialog (user enters credentials manually) -->
             <FirstLogonCommands>
                 <SynchronousCommand wcm:action="add">
                     <Order>1</Order>
-                    <CommandLine>powershell -Command "Set-ExecutionPolicy Bypass -Scope Process -Force"</CommandLine>
-                    <Description>Enable PowerShell scripts</Description>
+                    <CommandLine>powershell -Command "Start-Sleep -Seconds 10; Start-Process 'ms-device-enrollment:?mode=mdm'"</CommandLine>
+                    <Description>Launch Entra ID enrollment</Description>
                 </SynchronousCommand>
             </FirstLogonCommands>
         </component>
