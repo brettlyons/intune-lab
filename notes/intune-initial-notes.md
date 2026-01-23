@@ -4,7 +4,7 @@
 Establish a Microsoft Intune test environment and validate basic device enrollment and policy application.
 
 ## Environment
-- Microsoft 365 Business Premium Trial
+- Microsoft 365 Business Premium Trial (M365 Developer Program sandbox was unavailable)
 - Tenant: lyonsitlab.onmicrosoft.com
 - Entra ID
 - Microsoft Intune
