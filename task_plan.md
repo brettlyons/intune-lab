@@ -26,4 +26,11 @@ Complete a documentation-first Intune lab demonstrating device enrollment, polic
 - Azure VM default pricing (~$170/mo D2) - switched to local VM approach
 
 ## Status
-**Currently in Phase 3** - Setting up Windows VM for Intune enrollment
+**Currently in Phase 3** - Windows 11 VM created (`win11-intune`), ready for OS installation and Intune enrollment
+
+### Phase 3 Progress
+- [x] Configured libvirt default network
+- [x] Added `virtio-win` to NixOS system packages
+- [x] Created Windows 11 VM with VirtIO disk/network and TPM 2.0
+- [ ] Complete Windows installation (load VirtIO drivers during setup)
+- [ ] Enroll device into Intune
