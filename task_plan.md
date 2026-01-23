@@ -16,6 +16,8 @@ Complete a documentation-first Intune lab demonstrating device enrollment, polic
 - [ ] Apply one compliance policy (e.g., require PIN/BitLocker)
 - [ ] Apply one configuration profile (e.g., screen lock/password requirements)
 - [ ] Break → fix one thing (intentional troubleshooting exercise)
+- [ ] Update GitHub documentation with lessons learned
+- [ ] Test automated VM deployment with autounattend.xml
 
 ## Key Questions
 1. What compliance policies are most relevant for demonstrating real-world scenarios?
