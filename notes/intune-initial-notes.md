@@ -231,7 +231,11 @@ dsregcmd /status
 ```powershell
 Start-Process "ms-device-enrollment:?mode=mdm"
 ```
-Sign in with a licensed user (e.g., `testuser01@lyonsitlab.onmicrosoft.com`). After enrollment, verify:
+Sign in with a licensed user (e.g., `testuser01@lyonsitlab.onmicrosoft.com`).
+
+![MDM Enrollment Process](../images/automating_windows_11_vm_intune_install_part1.png)
+
+After enrollment, verify:
 - Entra portal shows MDM: Microsoft Intune
 - Device appears in Intune → Devices → Windows devices
 
@@ -260,6 +264,8 @@ Sign in with a licensed user (e.g., `testuser01@lyonsitlab.onmicrosoft.com`). Af
 ### BitLocker on VMs
 
 **Observation**: Compliance policy requiring device encryption showed "Error" state on the test VM.
+
+![Compliance Policy - Encryption Error](../images/intune_policy_compliance.png)
 
 **Workaround used**: Set encryption requirement to **Not configured** in compliance policy to achieve compliant state for testing other policies.
 
