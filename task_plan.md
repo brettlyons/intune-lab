@@ -7,7 +7,7 @@ Complete a documentation-first Intune lab demonstrating device enrollment, polic
 - [x] Phase 1: Environment setup
 - [x] Phase 2: Create test users and groups in Entra ID
 - [x] Phase 3: Enroll Windows test device into Intune
-- [ ] Phase 4: Apply compliance and configuration policies
+- [x] Phase 4: Apply compliance and configuration policies
 - [ ] Phase 5: Document troubleshooting workflows
 
 ## Next Session Tasks

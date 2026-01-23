@@ -205,7 +205,80 @@ Ticket management handled in Zammad homelab instance. All changes follow a ticke
 - Device sync timing matters — forced sync is often required during testing
 - Documentation-first approach helps reduce trial-and-error during configuration
 
+## Troubleshooting
+
+### Entra ID Joined but MDM Enrollment Missing
+
+**Symptom**: Device shows as joined to Entra ID, but:
+- Settings → Access work or school shows `MDM: None`
+- Entra admin center shows device with `MDM: None`
+- Device doesn't appear in Intune console
+- `dsregcmd /status` may show MDM URLs populated but enrollment didn't register server-side
+
+**Cause**: Device joined Entra ID before MDM auto-enrollment was configured, or auto-enrollment failed silently. The device missed the auto-enrollment window.
+
+**Diagnosis**:
+```powershell
+# Check device registration and MDM state
+dsregcmd /status
+
+# Look for:
+# - AzureAdJoined: YES
+# - MdmUrl: (populated or blank)
+```
+
+**Solution**: Manually trigger MDM enrollment:
+```powershell
+Start-Process "ms-device-enrollment:?mode=mdm"
+```
+Sign in with a licensed user (e.g., `testuser01@lyonsitlab.onmicrosoft.com`). After enrollment, verify:
+- Entra portal shows MDM: Microsoft Intune
+- Device appears in Intune → Devices → Windows devices
+
+**Prevention**: Ensure MDM auto-enrollment is configured BEFORE devices join Entra ID:
+- Intune admin center → Devices → Enrollment → Windows → Automatic Enrollment
+- Set MDM user scope to "All" or target security group
+
+### Compliance Policies vs Configuration Profiles
+
+**Compliance policies** - Only *check* if a device meets requirements. They don't configure anything.
+- Example: "Require Defender real-time protection" checks if it's enabled
+- If not enabled → device marked **non-compliant**
+- Non-compliant devices can be blocked from resources via Conditional Access
+
+**Configuration profiles** - Actually *configure* settings on the device.
+- Example: "Enable Defender real-time protection" pushes the setting to the device
+- Use Settings Catalog for granular control over individual settings
+
+**Typical workflow**:
+1. Create configuration profile to push desired settings
+2. Create compliance policy to verify settings are in place
+3. Device syncs → config applies → compliance evaluates → compliant
+
+**Common mistake**: Creating compliance policy without config profile, then wondering why devices are non-compliant. The compliance policy just checks - it doesn't enable anything.
+
+### BitLocker on VMs
+
+**Observation**: Compliance policy requiring device encryption showed "Error" state on the test VM.
+
+**Workaround used**: Set encryption requirement to **Not configured** in compliance policy to achieve compliant state for testing other policies.
+
+**TODO**: Investigate BitLocker on QEMU/KVM VMs:
+- Does the emulated TPM 2.0 (swtpm) support BitLocker?
+- What configuration is needed to enable BitLocker in a VM?
+- What caused the "Error" state vs simple non-compliance?
+
+### Settings Catalog Tips
+
+When searching for Defender settings in Settings Catalog:
+- Settings use different names than the compliance policy
+- Search for "Defender" or "Real Time"
+- Key settings:
+  - **Real Time Scan Direction**: `Monitor all files (bi-directional)`
+  - **Allow Cloud Protection**: `Allowed`
+  - **Allow Behavior Monitoring**: `Allowed`
+
 ## Next Steps
-- Complete device enrollment
-- Document compliance policy creation
-- Capture common troubleshooting steps
+- Test automated VM deployment with autounattend.xml
+- Document additional troubleshooting scenarios
+- Explore Conditional Access policies
