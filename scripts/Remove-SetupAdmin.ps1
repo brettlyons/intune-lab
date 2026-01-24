@@ -1,4 +1,5 @@
 # Remove-SetupAdmin.ps1
+# Status: TESTED AND WORKING (2026-01-24)
 # Deploy via Intune: Devices > Scripts and remediations > Platform scripts
 #
 # Purpose: Remove the temporary SetupAdmin local account after Entra ID enrollment.

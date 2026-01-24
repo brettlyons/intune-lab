@@ -24,7 +24,7 @@ Complete a documentation-first Intune lab demonstrating device enrollment, polic
 - [x] Test automated VM deployment with Autounattend.xml (documented failures and solutions)
 - [x] Verify xorriso-based ISO creation works (VM installing unattended)
 - [x] Verify OOBE completes and MDM enrollment launches (works - only login required)
-- [x] Remove SetupAdmin account post-enrollment (Intune script created)
+- [x] Remove SetupAdmin account post-enrollment (Intune script tested and working)
 - [x] Create dynamic device group for automatic policy assignment
 - [x] Add SPICE guest tools to unattended install for clipboard sharing
 - [x] Create bash script for one-command ISO build (scripts/build-iso.sh)
