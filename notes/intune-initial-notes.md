@@ -425,14 +425,6 @@ virsh dominfo <vm-name>         # VM details
 virsh domifaddr <vm-name>       # Get VM IP address
 ```
 
-## Planned Tasks
-
-- Create test users and groups
-- Enroll a Windows device into Intune
-- Apply a basic compliance policy
-- Apply a simple configuration profile
-- Observe and troubleshoot policy assignment behavior
-
 ## Automated Intune Configuration
 
 Instead of manually configuring Intune via the admin portal, use the setup
@@ -688,6 +680,6 @@ policies on specific devices before broader rollout.
 
 ## Next Steps
 
-- Test automated VM deployment with Autounattend.xml
-- Document additional troubleshooting scenarios
 - Explore Conditional Access policies
+- Test setup-intune.sh against live tenant
+- Investigate BitLocker on QEMU/KVM VMs with swtpm

@@ -20,7 +20,7 @@ Complete a documentation-first Intune lab demonstrating device enrollment, polic
 - [x] Update documentation with troubleshooting and lessons learned
 - [x] Add screenshots to repo
 
-## Next Session Tasks
+## Session Tasks (2026-01-24)
 - [x] Test automated VM deployment with Autounattend.xml (documented failures and solutions)
 - [x] Verify xorriso-based ISO creation works (VM installing unattended)
 - [x] Verify OOBE completes and MDM enrollment launches (works - only login required)
