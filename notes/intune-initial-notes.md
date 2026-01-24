@@ -380,6 +380,29 @@ virsh domifaddr <vm-name>       # Get VM IP address
 - Apply a simple configuration profile
 - Observe and troubleshoot policy assignment behavior
 
+## Automated Intune Configuration
+
+Instead of manually configuring Intune via the admin portal, use the setup script:
+
+```powershell
+# Prerequisites (one-time)
+Install-Module Microsoft.Graph -Scope CurrentUser
+
+# Run setup (will prompt for login)
+./scripts/setup-intune.ps1
+
+# Preview changes without applying
+./scripts/setup-intune.ps1 -WhatIf
+```
+
+The script creates:
+- **Dynamic device group**: Intune-Managed-Devices (all MDM-enrolled devices)
+- **Device script**: Remove-SetupAdmin.ps1 (cleanup temp admin)
+- **Compliance policy**: Defender enabled, password requirements
+- **Configuration profile**: Defender real-time protection settings
+
+All resources are assigned to the dynamic group automatically.
+
 ## Change Management
 Ticket management handled in Zammad homelab instance. All changes follow a ticketed workflow:
 1. Create ticket describing the change

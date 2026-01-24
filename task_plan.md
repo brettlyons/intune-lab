@@ -28,6 +28,8 @@ Complete a documentation-first Intune lab demonstrating device enrollment, polic
 - [x] Create dynamic device group for automatic policy assignment
 - [x] Add SPICE guest tools to unattended install for clipboard sharing
 - [x] Create bash script for one-command ISO build (scripts/build-iso.sh)
+- [ ] Create setup-intune.ps1 to configure Intune/Entra via Microsoft Graph PowerShell
+- [ ] Create bash equivalent using curl + Microsoft Graph REST API
 - [ ] Investigate BitLocker on QEMU/KVM VMs with swtpm
 
 ## Key Questions
