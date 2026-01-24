@@ -24,9 +24,10 @@ Complete a documentation-first Intune lab demonstrating device enrollment, polic
 - [x] Test automated VM deployment with Autounattend.xml (documented failures and solutions)
 - [x] Verify xorriso-based ISO creation works (VM installing unattended)
 - [x] Verify OOBE completes and MDM enrollment launches (works - only login required)
+- [x] Remove SetupAdmin account post-enrollment (Intune script created)
+- [x] Create dynamic device group for automatic policy assignment
 - [ ] Create bash script for one-command VM provisioning
 - [ ] Investigate BitLocker on QEMU/KVM VMs with swtpm
-- [ ] Consider dynamic device groups for automatic policy assignment
 
 ## Key Questions
 1. What compliance policies are most relevant for demonstrating real-world scenarios?

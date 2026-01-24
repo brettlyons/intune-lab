@@ -457,6 +457,54 @@ When searching for Defender settings in Settings Catalog:
   - **Allow Cloud Protection**: `Allowed`
   - **Allow Behavior Monitoring**: `Allowed`
 
+### SetupAdmin Account Persists After Enrollment
+
+**Symptom**: After Entra ID enrollment completes and the device sleeps/locks, Windows prompts for the SetupAdmin password instead of the enrolled user.
+
+**Cause**: The `Autounattend.xml` creates a temporary local admin account (`SetupAdmin`) to bypass OOBE. This account persists after enrollment and appears on the lock screen.
+
+**Solution**: Deploy a PowerShell script via Intune to remove the SetupAdmin account after enrollment.
+
+1. In Intune admin center, go to **Devices > Scripts and remediations > Platform scripts**
+2. Create a new script, upload `scripts/Remove-SetupAdmin.ps1`
+3. Configure:
+   - Run this script using the logged on credentials: **No**
+   - Run script in 64 bit PowerShell Host: **Yes**
+4. Assign to **Intune-Test-Devices** group (or All Devices)
+
+The script runs after enrollment, ensuring the device is managed before cleanup occurs.
+
+**Alternative approaches considered**:
+- Scheduled task in Autounattend.xml: More complex, runs before enrollment is confirmed
+- Proactive remediation: Overkill for one-time cleanup
+
+## Dynamic Device Groups
+
+Static device groups require manually adding each device after enrollment. Dynamic groups automatically include devices matching a rule.
+
+### Creating a Dynamic Device Group for Intune-Managed Devices
+
+1. Go to **Entra admin center** > **Groups** > **New group**
+2. Configure:
+   - **Group type**: Security
+   - **Group name**: Intune-Managed-Devices
+   - **Group description**: All devices enrolled in Intune MDM
+   - **Membership type**: Dynamic Device
+3. Click **Add dynamic query**
+4. Enter rule:
+   ```
+   (device.managementType -eq "MDM")
+   ```
+5. Click **Save** > **Create**
+
+![Dynamic group with MDM enrollment rule](../images/adding_dynamic_group_enrollment_property.png)
+
+The group will automatically populate with all Intune-enrolled devices. New enrollments appear within minutes (though Azure AD can take up to 24 hours in some cases).
+
+**Usage**: Assign scripts, compliance policies, and configuration profiles to this group instead of static groups. New devices automatically receive all assignments.
+
+**Note**: You can keep the static `Intune-Test-Devices` group for testing policies on specific devices before broader rollout.
+
 ## Next Steps
 - Test automated VM deployment with Autounattend.xml
 - Document additional troubleshooting scenarios
