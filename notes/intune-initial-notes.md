@@ -109,6 +109,15 @@ The `Autounattend.xml` in this repo automates:
 
 ### Creating a Modified Windows ISO (Recommended)
 
+**Quick method**: Use the build script:
+```bash
+./scripts/build-iso.sh ~/Downloads/Win11_24H2_English_x64.iso
+```
+
+The script downloads VirtIO drivers and SPICE tools automatically, works on any Linux distro with `curl` and `xorriso` installed.
+
+**Manual method** (for reference):
+
 **Goal**: Create a fully unattended Windows 11 installation that:
 1. Skips "Press any key to boot from CD"
 2. Includes VirtIO drivers for disk/network
