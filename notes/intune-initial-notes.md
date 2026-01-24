@@ -495,6 +495,43 @@ When searching for Defender settings in Settings Catalog:
   - **Allow Cloud Protection**: `Allowed`
   - **Allow Behavior Monitoring**: `Allowed`
 
+### Entra ID Join Not Completing During OOBE
+
+**Symptom**: After unattended install completes:
+- Device boots to SetupAdmin desktop
+- MDM enrollment dialog may appear but user closes/ignores it
+- `dsregcmd /status` shows `AzureAdJoined: NO`
+- No "Other user" option on lock screen - only SetupAdmin appears
+
+**Cause**: The `Autounattend.xml` launches the MDM enrollment dialog via `ms-device-enrollment:?mode=mdm`, but this only opens the dialog - the user must complete sign-in. If dismissed or not completed, the device remains local-only.
+
+**Diagnosis**:
+```powershell
+# Check Entra join status
+dsregcmd /status
+
+# Look for:
+# AzureAdJoined: YES or NO
+# DomainJoined: YES or NO
+# WorkplaceJoined: YES or NO (registered but not joined)
+```
+
+**Solution**: Manually join Entra ID:
+```powershell
+# Open work/school settings
+Start-Process "ms-settings:workplace"
+```
+Then:
+1. Click **Connect**
+2. Select **Join this device to Microsoft Entra ID** (the option that says it will give the organization full control of the device)
+3. Sign in with licensed user (e.g., `testuser01@lyonsitlab.onmicrosoft.com`)
+4. Confirm the join
+5. Reboot - Entra user now appears on lock screen
+
+**Note**: There are two similar options - make sure to pick the Entra ID join that gives organization full control, NOT the option that just adds a work/school account. The latter only *registers* the device without enabling MDM control or Entra user sign-in at the lock screen.
+
+**Prevention**: Consider Windows Autopilot or provisioning packages for fully automated Entra join without user interaction.
+
 ### SetupAdmin Account Persists After Enrollment
 
 **Symptom**: After Entra ID enrollment completes and the device sleeps/locks, Windows prompts for the SetupAdmin password instead of the enrolled user.
