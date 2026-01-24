@@ -28,8 +28,9 @@ Complete a documentation-first Intune lab demonstrating device enrollment, polic
 - [x] Create dynamic device group for automatic policy assignment
 - [x] Add SPICE guest tools to unattended install for clipboard sharing
 - [x] Create bash script for one-command ISO build (scripts/build-iso.sh)
-- [ ] Create setup-intune.ps1 to configure Intune/Entra via Microsoft Graph PowerShell
-- [ ] Create bash equivalent using curl + Microsoft Graph REST API
+- [x] Create setup-intune.ps1 to configure Intune/Entra via Microsoft Graph PowerShell (untested)
+- [x] Create bash equivalent using curl + Microsoft Graph REST API (untested)
+- [ ] Test setup-intune.sh against live tenant
 - [ ] Investigate BitLocker on QEMU/KVM VMs with swtpm
 
 ## Key Questions
@@ -51,8 +52,13 @@ Complete a documentation-first Intune lab demonstrating device enrollment, polic
 **All phases complete.** Device enrolled, policies applied, troubleshooting documented.
 
 ### Completed Infrastructure
-- Windows 11 VM (`win11-intune`) enrolled in Intune
+- Windows 11 VM enrolled in Intune via Entra ID join
 - Compliance policy: Defender requirements, NIST password standards
 - Configuration profile: Defender settings via Settings Catalog
-- `Autounattend.xml` ready for automated VM provisioning
+- Dynamic device group: Intune-Managed-Devices (auto-assigns policies)
+- `Autounattend.xml` with VirtIO drivers and SPICE guest tools
+- `scripts/build-iso.sh` - one-command ISO build (platform-agnostic)
+- `scripts/Remove-SetupAdmin.ps1` - Intune script to clean up temp admin (tested)
+- `scripts/setup-intune.sh` - Graph API config script (untested)
+- `scripts/setup-intune.ps1` - PowerShell config script (untested)
 - Troubleshooting docs with screenshots
