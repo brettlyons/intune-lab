@@ -21,8 +21,9 @@ Complete a documentation-first Intune lab demonstrating device enrollment, polic
 - [x] Add screenshots to repo
 
 ## Next Session Tasks
-- [x] Test automated VM deployment with autounattend.xml (documented failures and solutions)
-- [ ] Verify xorriso-based ISO creation works
+- [x] Test automated VM deployment with Autounattend.xml (documented failures and solutions)
+- [x] Verify xorriso-based ISO creation works (VM installing unattended)
+- [ ] Verify OOBE completes and MDM enrollment launches
 - [ ] Create bash script for one-command VM provisioning
 - [ ] Investigate BitLocker on QEMU/KVM VMs with swtpm
 - [ ] Consider dynamic device groups for automatic policy assignment
@@ -49,5 +50,5 @@ Complete a documentation-first Intune lab demonstrating device enrollment, polic
 - Windows 11 VM (`win11-intune`) enrolled in Intune
 - Compliance policy: Defender requirements, NIST password standards
 - Configuration profile: Defender settings via Settings Catalog
-- `autounattend.xml` ready for automated VM provisioning
+- `Autounattend.xml` ready for automated VM provisioning
 - Troubleshooting docs with screenshots
