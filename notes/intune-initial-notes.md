@@ -185,9 +185,14 @@ After boot, Windows installs fully automatically:
 2. Loads VirtIO drivers for disk/network
 3. Partitions and installs Windows 11 Pro
 4. Creates SetupAdmin local account
-5. Launches MDM enrollment dialog at first logon
+5. Presents Entra ID sign-in at first logon
 
-Sign in with a work account (e.g., `testuser01@lyonsitlab.onmicrosoft.com`) to join Entra ID and auto-enroll in Intune.
+Sign in with a work account (e.g., `testuser01@lyonsitlab.onmicrosoft.com`) to join Entra ID and auto-enroll in Intune. After login, the device automatically:
+- Joins Entra ID
+- Enrolls in Intune MDM
+- Applies compliance and configuration policies
+
+![Automated install with policies auto-applied after sign-on](../images/automated_install_policy_auto_applied_after_sign_on.png)
 
 ### What Didn't Work
 
