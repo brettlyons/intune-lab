@@ -1,27 +1,36 @@
 # Intune Lab – Initial Notes
 
 ## Objective
-Establish a Microsoft Intune test environment and validate basic device enrollment and policy application.
+
+Establish a Microsoft Intune test environment and validate basic device
+enrollment and policy application.
 
 ## Environment
-- Microsoft 365 Business Premium Trial (M365 Developer Program sandbox was unavailable)
+
+- Microsoft 365 Business Premium Trial (M365 Developer Program sandbox was
+  unavailable)
 - Tenant: lyonsitlab.onmicrosoft.com
 - Entra ID
 - Microsoft Intune
 - Windows 10/11 test device (local QEMU/KVM VM)
 
 ### VM Options Considered
-- **Azure VM**: ~$170/mo for D2 Windows instance (Azure offers $200 free credits for new accounts)
-- **Local QEMU/KVM**: Free, requires Windows ISO from Microsoft evaluation center or existing media
+
+- **Azure VM**: ~$170/mo for D2 Windows instance (Azure offers $200 free credits
+  for new accounts)
+- **Local QEMU/KVM**: Free, requires Windows ISO from Microsoft evaluation
+  center or existing media
 
 ### Virsh/libvirt Quick Reference
 
 **GUI Management:**
+
 ```bash
 virt-manager                    # Launch graphical VM manager
 ```
 
 **VM Lifecycle:**
+
 ```bash
 virsh list --all                # List all VMs (running and stopped)
 virsh start <vm-name>           # Start a VM
@@ -33,6 +42,7 @@ virsh resume <vm-name>          # Resume paused VM
 ```
 
 **VM Creation:**
+
 ```bash
 # Create VM from ISO (Windows 11 with VirtIO and TPM 2.0)
 # Must use sudo and qemu:///system for TPM support via swtpm
@@ -52,23 +62,31 @@ sudo virt-install \
 ```
 
 **VirtIO Drivers (NixOS):**
+
 - Package: `virtio-win` (added to `system.nix` environment.systemPackages)
 - Location: `/nix/store/*-virtio-win-*/`
-- Contains: Driver directories for disk (viostor), network (NetKVM), balloon, etc.
+- Contains: Driver directories for disk (viostor), network (NetKVM), balloon,
+  etc.
 - Windows installer: `virtio-win-guest-tools.exe` in package root
 
 **Required for Windows Install with VirtIO disk**:
 
-When using `bus=virtio` for the disk, Windows installer will show **no drives available** at the "Where do you want to install Windows?" screen. This is because Windows doesn't have VirtIO drivers built-in.
+When using `bus=virtio` for the disk, Windows installer will show **no drives
+available** at the "Where do you want to install Windows?" screen. This is
+because Windows doesn't have VirtIO drivers built-in.
 
-**Solution**: Load the VirtIO storage driver (viostor) during installation. However, the NixOS `virtio-win` package contains extracted driver directories, NOT an ISO file, so you must first create an ISO and attach it to the VM.
+**Solution**: Load the VirtIO storage driver (viostor) during installation.
+However, the NixOS `virtio-win` package contains extracted driver directories,
+NOT an ISO file, so you must first create an ISO and attach it to the VM.
 
 1. Create an ISO from the nix store directory:
+
 ```bash
 nix-shell -p cdrtools --run "mkisofs -o /tmp/virtio-win.iso -J -r /nix/store/*-virtio-win-*/"
 ```
 
 2. Attach ISO to running VM:
+
 ```bash
 # This fails - SATA cannot be hotplugged:
 sudo virsh attach-disk win11-intune /tmp/virtio-win.iso sdb --type cdrom --mode readonly --targetbus sata
@@ -88,17 +106,21 @@ sudo virsh attach-disk win11-intune /tmp/virtio-win.iso sdb --type cdrom --mode 
 ## Unattended Windows Installation
 
 **Problem**: Manual Windows installation requires multiple interactions:
+
 - Clicking through language/region selection
 - Manually loading VirtIO drivers when disk isn't visible
 - Partitioning the disk
 - Clicking through OOBE screens
 - Setting up user accounts
 
-This makes it tedious to spin up fresh VMs for testing, and the VirtIO driver step is easy to forget.
+This makes it tedious to spin up fresh VMs for testing, and the VirtIO driver
+step is easy to forget.
 
-**Solution**: Use `Autounattend.xml` answer file for fully automated installation.
+**Solution**: Use `Autounattend.xml` answer file for fully automated
+installation.
 
 The `Autounattend.xml` in this repo automates:
+
 - Language/locale (en-US)
 - Skips product key (evaluation)
 - Auto-partitions disk (GPT/UEFI: EFI + MSR + Windows partitions)
@@ -110,20 +132,24 @@ The `Autounattend.xml` in this repo automates:
 ### Creating a Modified Windows ISO (Recommended)
 
 **Quick method**: Use the build script:
+
 ```bash
 ./scripts/build-iso.sh ~/Downloads/Win11_24H2_English_x64.iso
 ```
 
-The script downloads VirtIO drivers and SPICE tools automatically, works on any Linux distro with `curl` and `xorriso` installed.
+The script downloads VirtIO drivers and SPICE tools automatically, works on any
+Linux distro with `curl` and `xorriso` installed.
 
 **Manual method** (for reference):
 
 **Goal**: Create a fully unattended Windows 11 installation that:
+
 1. Skips "Press any key to boot from CD"
 2. Includes VirtIO drivers for disk/network
 3. Contains `Autounattend.xml` for automated setup
 
-**Solution**: Modify the Windows ISO to include Autounattend.xml, VirtIO drivers, and use `efisys_noprompt.bin` as the EFI boot loader.
+**Solution**: Modify the Windows ISO to include Autounattend.xml, VirtIO
+drivers, and use `efisys_noprompt.bin` as the EFI boot loader.
 
 ```bash
 # 1. Mount the original Windows ISO (read-only)
@@ -195,6 +221,7 @@ sudo virt-install \
 ```
 
 After boot, Windows installs fully automatically:
+
 1. Skips "press any key" (noprompt bootloader)
 2. Loads VirtIO drivers for disk/network
 3. Partitions and installs Windows 11 Pro
@@ -202,7 +229,9 @@ After boot, Windows installs fully automatically:
 5. Installs SPICE guest tools (clipboard/display integration)
 6. Presents Entra ID sign-in at first logon
 
-Sign in with a work account (e.g., `testuser01@lyonsitlab.onmicrosoft.com`) to join Entra ID and auto-enroll in Intune. After login, the device automatically:
+Sign in with a work account (e.g., `testuser01@lyonsitlab.onmicrosoft.com`) to
+join Entra ID and auto-enroll in Intune. After login, the device automatically:
+
 - Joins Entra ID
 - Enrolls in Intune MDM
 - Applies compliance and configuration policies
@@ -212,7 +241,9 @@ Sign in with a work account (e.g., `testuser01@lyonsitlab.onmicrosoft.com`) to j
 ### What Didn't Work
 
 #### 1. Secondary CD-ROM with Autounattend.xml
-**Attempt**: Use original Windows ISO as boot CD, attach second CD-ROM with Autounattend.xml and VirtIO drivers.
+
+**Attempt**: Use original Windows ISO as boot CD, attach second CD-ROM with
+Autounattend.xml and VirtIO drivers.
 
 ```bash
 # This approach has issues:
@@ -222,9 +253,11 @@ sudo virt-install \
   ...
 ```
 
-**Problem**: Still requires "Press any key to boot from CD" and Windows may not reliably find Autounattend.xml on the secondary CD-ROM.
+**Problem**: Still requires "Press any key to boot from CD" and Windows may not
+reliably find Autounattend.xml on the secondary CD-ROM.
 
 #### 2. mkisofs/genisoimage for Windows ISO creation
+
 **Attempt**: Use `mkisofs` (cdrtools) to create bootable Windows ISO.
 
 ```bash
@@ -245,9 +278,12 @@ nix-shell -p cdrtools --run "mkisofs \
     /tmp/win11_mod"
 ```
 
-**Problem**: Results in "Windows Boot Manager - Windows failed to start" error. The `mkisofs`/`genisoimage` tools on Linux don't properly handle Windows boot structures. Use `xorriso -as mkisofs` instead.
+**Problem**: Results in "Windows Boot Manager - Windows failed to start" error.
+The `mkisofs`/`genisoimage` tools on Linux don't properly handle Windows boot
+structures. Use `xorriso -as mkisofs` instead.
 
 #### 3. Missing xmlns:wcm namespace in Autounattend.xml
+
 **Attempt**: Autounattend.xml without proper namespace declaration.
 
 ```xml
@@ -256,11 +292,13 @@ nix-shell -p cdrtools --run "mkisofs \
 ```
 
 **Solution**: Must include the wcm namespace:
+
 ```xml
 <unattend xmlns="urn:schemas-microsoft-com:unattend" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
 ```
 
 #### 4. Missing product key in Autounattend.xml
+
 **Attempt**: ProductKey section without actual key value.
 
 ```xml
@@ -270,7 +308,9 @@ nix-shell -p cdrtools --run "mkisofs \
 </ProductKey>
 ```
 
-**Solution**: Include the generic Windows 11 Pro key (selects edition, doesn't activate):
+**Solution**: Include the generic Windows 11 Pro key (selects edition, doesn't
+activate):
+
 ```xml
 <ProductKey>
     <Key>W269N-WFGWX-YVC9B-4J6C9-T83GX</Key>
@@ -279,6 +319,7 @@ nix-shell -p cdrtools --run "mkisofs \
 ```
 
 #### 5. Lowercase autounattend.xml filename
+
 **Attempt**: Using `autounattend.xml` (all lowercase).
 
 **Problem**: Windows Setup may not find the file reliably.
@@ -286,7 +327,9 @@ nix-shell -p cdrtools --run "mkisofs \
 **Solution**: Use `Autounattend.xml` (capital A) for consistent detection.
 
 #### 6. DriverPaths not loading VirtIO drivers automatically
-**Attempt**: Using `<DriverPaths>` in Autounattend.xml to specify driver locations.
+
+**Attempt**: Using `<DriverPaths>` in Autounattend.xml to specify driver
+locations.
 
 ```xml
 <DriverPaths>
@@ -296,9 +339,12 @@ nix-shell -p cdrtools --run "mkisofs \
 </DriverPaths>
 ```
 
-**Problem**: Windows Setup reaches "Select location to install Windows" with no disks visible. Manually loading driver from D:\viostor\w11\amd64 works, but DriverPaths isn't processed automatically.
+**Problem**: Windows Setup reaches "Select location to install Windows" with no
+disks visible. Manually loading driver from D:\viostor\w11\amd64 works, but
+DriverPaths isn't processed automatically.
 
-**Solution**: Create a `$WinPEDriver$` folder at the ISO root containing the driver files. Windows PE automatically scans this folder during boot.
+**Solution**: Create a `$WinPEDriver$` folder at the ISO root containing the
+driver files. Windows PE automatically scans this folder during boot.
 
 ```bash
 # Add drivers to $WinPEDriver$ folder (in ISO build directory)
@@ -309,7 +355,8 @@ sudo cp -r /tmp/win11_mod/NetKVM/w11/amd64/* "/tmp/win11_mod/\$WinPEDriver\$/"
 
 ### Alternative: Manual "Press Any Key" Approach
 
-If the modified ISO approach doesn't work, you can use a secondary CD-ROM but must manually press a key at boot:
+If the modified ISO approach doesn't work, you can use a secondary CD-ROM but
+must manually press a key at boot:
 
 ```bash
 # Create combined ISO with Autounattend.xml and VirtIO drivers
@@ -338,12 +385,14 @@ sudo virt-install \
 ### Intune Auto-Enrollment Prerequisites
 
 For automatic Intune enrollment when signing in with a work account:
+
 1. User must have Intune license (included in M365 Business Premium)
 2. MDM auto-enrollment enabled in Entra ID:
    - https://entra.microsoft.com → Identity → Devices → Device settings
    - Set "MDM user scope" to "All" or select security group
 
 **Network Autostart (Potential Issue):**
+
 - The default libvirt network may not autostart after reboot
 - If VMs fail to start with "network 'default' is not active":
   ```bash
@@ -354,6 +403,7 @@ For automatic Intune enrollment when signing in with a work account:
 - Consider NixVirt flake for fully declarative network management
 
 **Snapshots:**
+
 ```bash
 virsh snapshot-create-as <vm> <snapshot-name>  # Create snapshot
 virsh snapshot-list <vm>                        # List snapshots
@@ -362,18 +412,21 @@ virsh snapshot-delete <vm> <snapshot-name>      # Delete snapshot
 ```
 
 **Console/Display:**
+
 ```bash
 virsh console <vm-name>         # Serial console (if configured)
 virt-viewer <vm-name>           # Graphical console
 ```
 
 **Info:**
+
 ```bash
 virsh dominfo <vm-name>         # VM details
 virsh domifaddr <vm-name>       # Get VM IP address
 ```
 
 ## Planned Tasks
+
 - Create test users and groups
 - Enroll a Windows device into Intune
 - Apply a basic compliance policy
@@ -382,7 +435,8 @@ virsh domifaddr <vm-name>       # Get VM IP address
 
 ## Automated Intune Configuration
 
-Instead of manually configuring Intune via the admin portal, use the setup script:
+Instead of manually configuring Intune via the admin portal, use the setup
+script:
 
 ```powershell
 # Prerequisites (one-time)
@@ -396,6 +450,7 @@ Install-Module Microsoft.Graph -Scope CurrentUser
 ```
 
 The script creates:
+
 - **Dynamic device group**: Intune-Managed-Devices (all MDM-enrolled devices)
 - **Device script**: Remove-SetupAdmin.ps1 (cleanup temp admin)
 - **Compliance policy**: Defender enabled, password requirements
@@ -404,7 +459,10 @@ The script creates:
 All resources are assigned to the dynamic group automatically.
 
 ## Change Management
-Ticket management handled in Zammad homelab instance. All changes follow a ticketed workflow:
+
+Ticket management handled in Zammad homelab instance. All changes follow a
+ticketed workflow:
+
 1. Create ticket describing the change
 2. Document intended configuration
 3. Implement change
@@ -412,7 +470,9 @@ Ticket management handled in Zammad homelab instance. All changes follow a ticke
 5. Close ticket
 
 ## Notes
-- Intune workflow is heavily group-driven; incorrect group membership is a common failure point
+
+- Intune workflow is heavily group-driven; incorrect group membership is a
+  common failure point
 - Device sync timing matters — forced sync is often required during testing
 - Documentation-first approach helps reduce trial-and-error during configuration
 
@@ -421,14 +481,18 @@ Ticket management handled in Zammad homelab instance. All changes follow a ticke
 ### Entra ID Joined but MDM Enrollment Missing
 
 **Symptom**: Device shows as joined to Entra ID, but:
+
 - Settings → Access work or school shows `MDM: None`
 - Entra admin center shows device with `MDM: None`
 - Device doesn't appear in Intune console
-- `dsregcmd /status` may show MDM URLs populated but enrollment didn't register server-side
+- `dsregcmd /status` may show MDM URLs populated but enrollment didn't register
+  server-side
 
-**Cause**: Device joined Entra ID before MDM auto-enrollment was configured, or auto-enrollment failed silently. The device missed the auto-enrollment window.
+**Cause**: Device joined Entra ID before MDM auto-enrollment was configured, or
+auto-enrollment failed silently. The device missed the auto-enrollment window.
 
 **Diagnosis**:
+
 ```powershell
 # Check device registration and MDM state
 dsregcmd /status
@@ -439,48 +503,63 @@ dsregcmd /status
 ```
 
 **Solution**: Manually trigger MDM enrollment:
+
 ```powershell
 Start-Process "ms-device-enrollment:?mode=mdm"
 ```
+
 Sign in with a licensed user (e.g., `testuser01@lyonsitlab.onmicrosoft.com`).
 
 ![MDM Enrollment Process](../images/automating_windows_11_vm_intune_install_part1.png)
 
 After enrollment, verify:
+
 - Entra portal shows MDM: Microsoft Intune
 - Device appears in Intune → Devices → Windows devices
 
-**Prevention**: Ensure MDM auto-enrollment is configured BEFORE devices join Entra ID:
+**Prevention**: Ensure MDM auto-enrollment is configured BEFORE devices join
+Entra ID:
+
 - Intune admin center → Devices → Enrollment → Windows → Automatic Enrollment
 - Set MDM user scope to "All" or target security group
 
 ### Compliance Policies vs Configuration Profiles
 
-**Compliance policies** - Only *check* if a device meets requirements. They don't configure anything.
+**Compliance policies** - Only _check_ if a device meets requirements. They
+don't configure anything.
+
 - Example: "Require Defender real-time protection" checks if it's enabled
 - If not enabled → device marked **non-compliant**
 - Non-compliant devices can be blocked from resources via Conditional Access
 
-**Configuration profiles** - Actually *configure* settings on the device.
-- Example: "Enable Defender real-time protection" pushes the setting to the device
+**Configuration profiles** - Actually _configure_ settings on the device.
+
+- Example: "Enable Defender real-time protection" pushes the setting to the
+  device
 - Use Settings Catalog for granular control over individual settings
 
 **Typical workflow**:
+
 1. Create configuration profile to push desired settings
 2. Create compliance policy to verify settings are in place
 3. Device syncs → config applies → compliance evaluates → compliant
 
-**Common mistake**: Creating compliance policy without config profile, then wondering why devices are non-compliant. The compliance policy just checks - it doesn't enable anything.
+**Common mistake**: Creating compliance policy without config profile, then
+wondering why devices are non-compliant. The compliance policy just checks - it
+doesn't enable anything.
 
 ### BitLocker on VMs
 
-**Observation**: Compliance policy requiring device encryption showed "Error" state on the test VM.
+**Observation**: Compliance policy requiring device encryption showed "Error"
+state on the test VM.
 
 ![Compliance Policy - Encryption Error](../images/intune_policy_compliance.png)
 
-**Workaround used**: Set encryption requirement to **Not configured** in compliance policy to achieve compliant state for testing other policies.
+**Workaround used**: Set encryption requirement to **Not configured** in
+compliance policy to achieve compliant state for testing other policies.
 
 **TODO**: Investigate BitLocker on QEMU/KVM VMs:
+
 - Does the emulated TPM 2.0 (swtpm) support BitLocker?
 - What configuration is needed to enable BitLocker in a VM?
 - What caused the "Error" state vs simple non-compliance?
@@ -488,6 +567,7 @@ After enrollment, verify:
 ### Settings Catalog Tips
 
 When searching for Defender settings in Settings Catalog:
+
 - Settings use different names than the compliance policy
 - Search for "Defender" or "Real Time"
 - Key settings:
@@ -498,14 +578,18 @@ When searching for Defender settings in Settings Catalog:
 ### Entra ID Join Not Completing During OOBE
 
 **Symptom**: After unattended install completes:
+
 - Device boots to SetupAdmin desktop
 - MDM enrollment dialog may appear but user closes/ignores it
 - `dsregcmd /status` shows `AzureAdJoined: NO`
 - No "Other user" option on lock screen - only SetupAdmin appears
 
-**Cause**: The `Autounattend.xml` launches the MDM enrollment dialog via `ms-device-enrollment:?mode=mdm`, but this only opens the dialog - the user must complete sign-in. If dismissed or not completed, the device remains local-only.
+**Cause**: The `Autounattend.xml` launches the MDM enrollment dialog via
+`ms-device-enrollment:?mode=mdm`, but this only opens the dialog - the user must
+complete sign-in. If dismissed or not completed, the device remains local-only.
 
 **Diagnosis**:
+
 ```powershell
 # Check Entra join status
 dsregcmd /status
@@ -517,45 +601,62 @@ dsregcmd /status
 ```
 
 **Solution**: Manually join Entra ID:
+
 ```powershell
 # Open work/school settings
 Start-Process "ms-settings:workplace"
 ```
+
 Then:
+
 1. Click **Connect**
-2. Select **Join this device to Microsoft Entra ID** (the option that says it will give the organization full control of the device)
+2. Select **Join this device to Microsoft Entra ID** (the option that says it
+   will give the organization full control of the device)
 3. Sign in with licensed user (e.g., `testuser01@lyonsitlab.onmicrosoft.com`)
 4. Confirm the join
 5. Reboot - Entra user now appears on lock screen
 
-**Note**: There are two similar options - make sure to pick the Entra ID join that gives organization full control, NOT the option that just adds a work/school account. The latter only *registers* the device without enabling MDM control or Entra user sign-in at the lock screen.
+**Note**: There are two similar options - make sure to pick the Entra ID join
+that gives organization full control, NOT the option that just adds a
+work/school account. The latter only _registers_ the device without enabling MDM
+control or Entra user sign-in at the lock screen.
 
-**Prevention**: Consider Windows Autopilot or provisioning packages for fully automated Entra join without user interaction.
+**Prevention**: Consider Windows Autopilot or provisioning packages for fully
+automated Entra join without user interaction.
 
 ### SetupAdmin Account Persists After Enrollment
 
-**Symptom**: After Entra ID enrollment completes and the device sleeps/locks, Windows prompts for the SetupAdmin password instead of the enrolled user.
+**Symptom**: After Entra ID enrollment completes and the device sleeps/locks,
+Windows prompts for the SetupAdmin password instead of the enrolled user.
 
-**Cause**: The `Autounattend.xml` creates a temporary local admin account (`SetupAdmin`) to bypass OOBE. This account persists after enrollment and appears on the lock screen.
+**Cause**: The `Autounattend.xml` creates a temporary local admin account
+(`SetupAdmin`) to bypass OOBE. This account persists after enrollment if
+enrollment isn't into Entra ID MDM device control.
 
-**Solution**: Deploy a PowerShell script via Intune to remove the SetupAdmin account after enrollment.
+**Solution**: Deploy a PowerShell script via Intune to remove the SetupAdmin
+account after enrollment.
 
-1. In Intune admin center, go to **Devices > Scripts and remediations > Platform scripts**
+1. In Intune admin center, go to **Devices > Scripts and remediations > Platform
+   scripts**
 2. Create a new script, upload `scripts/Remove-SetupAdmin.ps1`
 3. Configure:
    - Run this script using the logged on credentials: **No**
    - Run script in 64 bit PowerShell Host: **Yes**
 4. Assign to **Intune-Test-Devices** group (or All Devices)
 
-The script runs after enrollment, ensuring the device is managed before cleanup occurs.
+The script runs after enrollment, ensuring the device is managed before cleanup
+occurs.
 
 **Alternative approaches considered**:
-- Scheduled task in Autounattend.xml: More complex, runs before enrollment is confirmed
+
+- Scheduled task in Autounattend.xml: More complex, runs before enrollment is
+  confirmed
 - Proactive remediation: Overkill for one-time cleanup
 
 ## Dynamic Device Groups
 
-Static device groups require manually adding each device after enrollment. Dynamic groups automatically include devices matching a rule.
+Static device groups require manually adding each device after enrollment.
+Dynamic groups automatically include devices matching a rule.
 
 ### Creating a Dynamic Device Group for Intune-Managed Devices
 
@@ -574,13 +675,19 @@ Static device groups require manually adding each device after enrollment. Dynam
 
 ![Dynamic group with MDM enrollment rule](../images/adding_dynamic_group_enrollment_property.png)
 
-The group will automatically populate with all Intune-enrolled devices. New enrollments appear within minutes (though Azure AD can take up to 24 hours in some cases).
+The group will automatically populate with all Intune-enrolled devices. New
+enrollments appear within minutes (though Azure AD can take up to 24 hours in
+some cases).
 
-**Usage**: Assign scripts, compliance policies, and configuration profiles to this group instead of static groups. New devices automatically receive all assignments.
+**Usage**: Assign scripts, compliance policies, and configuration profiles to
+this group instead of static groups. New devices automatically receive all
+assignments.
 
-**Note**: You can keep the static `Intune-Test-Devices` group for testing policies on specific devices before broader rollout.
+**Note**: You can keep the static `Intune-Test-Devices` group for testing
+policies on specific devices before broader rollout.
 
 ## Next Steps
+
 - Test automated VM deployment with Autounattend.xml
 - Document additional troubleshooting scenarios
 - Explore Conditional Access policies
