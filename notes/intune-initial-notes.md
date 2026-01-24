@@ -96,9 +96,9 @@ sudo virsh attach-disk win11-intune /tmp/virtio-win.iso sdb --type cdrom --mode 
 
 This makes it tedious to spin up fresh VMs for testing, and the VirtIO driver step is easy to forget.
 
-**Solution**: Use `autounattend.xml` answer file for fully automated installation.
+**Solution**: Use `Autounattend.xml` answer file for fully automated installation.
 
-The `autounattend.xml` in this repo automates:
+The `Autounattend.xml` in this repo automates:
 - Language/locale (en-US)
 - Skips product key (evaluation)
 - Auto-partitions disk (GPT/UEFI: EFI + MSR + Windows partitions)
@@ -107,28 +107,198 @@ The `autounattend.xml` in this repo automates:
 - Skips most OOBE screens
 - Presents Microsoft/Entra ID sign-in for Intune enrollment
 
-### Creating the Combined ISO
+### Creating a Modified Windows ISO (Recommended)
 
-Combine `autounattend.xml` with VirtIO drivers into one ISO:
+**Goal**: Create a fully unattended Windows 11 installation that:
+1. Skips "Press any key to boot from CD"
+2. Includes VirtIO drivers for disk/network
+3. Contains `Autounattend.xml` for automated setup
+
+**Solution**: Modify the Windows ISO to include Autounattend.xml, VirtIO drivers, and use `efisys_noprompt.bin` as the EFI boot loader.
 
 ```bash
-# Copy virtio drivers and autounattend.xml to temp directory
-mkdir -p /tmp/virtio-combined
-cp -r /nix/store/*-virtio-win-*/* /tmp/virtio-combined/
-cp autounattend.xml /tmp/virtio-combined/
+# 1. Mount the original Windows ISO (read-only)
+mkdir -p /tmp/win11_mnt
+sudo mkdir -p /tmp/win11_mod
+sudo mount -o loop,ro /home/blyons/Downloads/Win11_24H2_English_x64.iso /tmp/win11_mnt
 
-# Create ISO
-nix-shell -p cdrtools --run "mkisofs -o virtio-autounattend.iso -J -r /tmp/virtio-combined/"
+# 2. Copy ISO contents to working directory (use sudo to preserve permissions)
+sudo cp -r /tmp/win11_mnt/* /tmp/win11_mod/
+
+# 3. Add Autounattend.xml to root
+sudo cp /home/blyons/intune-lab/Autounattend.xml /tmp/win11_mod/
+
+# 4. Add VirtIO drivers
+sudo cp -r /nix/store/*-virtio-win-*/{viostor,NetKVM} /tmp/win11_mod/
+
+# 5. Add drivers to $WinPEDriver$ for automatic loading during WinPE
+sudo mkdir -p "/tmp/win11_mod/\$WinPEDriver\$"
+sudo cp -r /tmp/win11_mod/viostor/w11/amd64/* "/tmp/win11_mod/\$WinPEDriver\$/"
+sudo cp -r /tmp/win11_mod/NetKVM/w11/amd64/* "/tmp/win11_mod/\$WinPEDriver\$/"
+
+# 6. Create modified ISO with xorriso (NOT mkisofs - see "What Didn't Work")
+nix-shell -p xorriso --run "xorriso -as mkisofs \
+    -iso-level 4 \
+    -rock \
+    -disable-deep-relocation \
+    -untranslated-filenames \
+    -b boot/etfsboot.com \
+    -no-emul-boot \
+    -boot-load-size 8 \
+    -eltorito-alt-boot \
+    -eltorito-platform efi \
+    -b efi/microsoft/boot/efisys_noprompt.bin \
+    -no-emul-boot \
+    -o /home/blyons/intune-lab/Win11_unattended.iso \
+    /tmp/win11_mod"
+
+# 7. Cleanup
+sudo umount /tmp/win11_mnt
+sudo rm -rf /tmp/win11_mod /tmp/win11_mnt
 ```
 
 ### One-Command VM Creation (Unattended)
 
 ```bash
 # Remove existing VM if present
-sudo virsh destroy win11-intune 2>/dev/null
-sudo virsh undefine win11-intune --nvram 2>/dev/null
+sudo virsh destroy win11-intune-02 2>/dev/null
+sudo virsh undefine win11-intune-02 --nvram 2>/dev/null
 
-# Create VM with both ISOs - boots and installs automatically
+# Create VM with modified ISO - boots and installs fully automatically
+sudo virt-install \
+  --connect qemu:///system \
+  --name win11-intune-02 \
+  --ram 4096 \
+  --vcpus 2 \
+  --disk size=60,bus=virtio \
+  --cdrom /home/blyons/intune-lab/Win11_unattended.iso \
+  --os-variant win11 \
+  --network network=default,model=virtio \
+  --graphics spice \
+  --tpm backend.type=emulator,backend.version=2.0 \
+  --boot uefi \
+  --noautoconsole
+```
+
+After boot, Windows installs fully automatically:
+1. Skips "press any key" (noprompt bootloader)
+2. Loads VirtIO drivers for disk/network
+3. Partitions and installs Windows 11 Pro
+4. Creates SetupAdmin local account
+5. Launches MDM enrollment dialog at first logon
+
+Sign in with a work account (e.g., `testuser01@lyonsitlab.onmicrosoft.com`) to join Entra ID and auto-enroll in Intune.
+
+### What Didn't Work
+
+#### 1. Secondary CD-ROM with Autounattend.xml
+**Attempt**: Use original Windows ISO as boot CD, attach second CD-ROM with Autounattend.xml and VirtIO drivers.
+
+```bash
+# This approach has issues:
+sudo virt-install \
+  --cdrom /path/to/Win11.iso \
+  --disk virtio-autounattend.iso,device=cdrom \
+  ...
+```
+
+**Problem**: Still requires "Press any key to boot from CD" and Windows may not reliably find Autounattend.xml on the secondary CD-ROM.
+
+#### 2. mkisofs/genisoimage for Windows ISO creation
+**Attempt**: Use `mkisofs` (cdrtools) to create bootable Windows ISO.
+
+```bash
+# This command creates a broken ISO:
+nix-shell -p cdrtools --run "mkisofs \
+    -iso-level 4 \
+    -rock \
+    -disable-deep-relocation \
+    -untranslated-filenames \
+    -b boot/etfsboot.com \
+    -no-emul-boot \
+    -boot-load-size 8 \
+    -eltorito-alt-boot \
+    -eltorito-platform efi \
+    -b efi/microsoft/boot/efisys_noprompt.bin \
+    -no-emul-boot \
+    -o Win11_unattended.iso \
+    /tmp/win11_mod"
+```
+
+**Problem**: Results in "Windows Boot Manager - Windows failed to start" error. The `mkisofs`/`genisoimage` tools on Linux don't properly handle Windows boot structures. Use `xorriso -as mkisofs` instead.
+
+#### 3. Missing xmlns:wcm namespace in Autounattend.xml
+**Attempt**: Autounattend.xml without proper namespace declaration.
+
+```xml
+<!-- This causes Windows Setup to crash (purple screen, then shutdown): -->
+<unattend xmlns="urn:schemas-microsoft-com:unattend">
+```
+
+**Solution**: Must include the wcm namespace:
+```xml
+<unattend xmlns="urn:schemas-microsoft-com:unattend" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+```
+
+#### 4. Missing product key in Autounattend.xml
+**Attempt**: ProductKey section without actual key value.
+
+```xml
+<!-- This stops at "Enter product key" screen: -->
+<ProductKey>
+    <WillShowUI>OnError</WillShowUI>
+</ProductKey>
+```
+
+**Solution**: Include the generic Windows 11 Pro key (selects edition, doesn't activate):
+```xml
+<ProductKey>
+    <Key>W269N-WFGWX-YVC9B-4J6C9-T83GX</Key>
+    <WillShowUI>OnError</WillShowUI>
+</ProductKey>
+```
+
+#### 5. Lowercase autounattend.xml filename
+**Attempt**: Using `autounattend.xml` (all lowercase).
+
+**Problem**: Windows Setup may not find the file reliably.
+
+**Solution**: Use `Autounattend.xml` (capital A) for consistent detection.
+
+#### 6. DriverPaths not loading VirtIO drivers automatically
+**Attempt**: Using `<DriverPaths>` in Autounattend.xml to specify driver locations.
+
+```xml
+<DriverPaths>
+    <PathAndCredentials wcm:action="add" wcm:keyValue="1">
+        <Path>D:\viostor\w11\amd64</Path>
+    </PathAndCredentials>
+</DriverPaths>
+```
+
+**Problem**: Windows Setup reaches "Select location to install Windows" with no disks visible. Manually loading driver from D:\viostor\w11\amd64 works, but DriverPaths isn't processed automatically.
+
+**Solution**: Create a `$WinPEDriver$` folder at the ISO root containing the driver files. Windows PE automatically scans this folder during boot.
+
+```bash
+# Add drivers to $WinPEDriver$ folder (in ISO build directory)
+sudo mkdir -p "/tmp/win11_mod/\$WinPEDriver\$"
+sudo cp -r /tmp/win11_mod/viostor/w11/amd64/* "/tmp/win11_mod/\$WinPEDriver\$/"
+sudo cp -r /tmp/win11_mod/NetKVM/w11/amd64/* "/tmp/win11_mod/\$WinPEDriver\$/"
+```
+
+### Alternative: Manual "Press Any Key" Approach
+
+If the modified ISO approach doesn't work, you can use a secondary CD-ROM but must manually press a key at boot:
+
+```bash
+# Create combined ISO with Autounattend.xml and VirtIO drivers
+mkdir -p /tmp/virtio-combined
+cp -r /nix/store/*-virtio-win-*/* /tmp/virtio-combined/
+cp Autounattend.xml /tmp/virtio-combined/
+nix-shell -p cdrtools --run "mkisofs -o virtio-autounattend.iso -J -r /tmp/virtio-combined/"
+
+# Create VM (requires manual "press any key" at boot)
 sudo virt-install \
   --connect qemu:///system \
   --name win11-intune \
@@ -144,8 +314,6 @@ sudo virt-install \
   --boot uefi \
   --noautoconsole
 ```
-
-After boot, Windows will install automatically and present the Entra ID sign-in screen. Sign in with a work account (e.g., `testuser01@lyonsitlab.onmicrosoft.com`) to join Entra ID and auto-enroll in Intune.
 
 ### Intune Auto-Enrollment Prerequisites
 
@@ -285,6 +453,6 @@ When searching for Defender settings in Settings Catalog:
   - **Allow Behavior Monitoring**: `Allowed`
 
 ## Next Steps
-- Test automated VM deployment with autounattend.xml
+- Test automated VM deployment with Autounattend.xml
 - Document additional troubleshooting scenarios
 - Explore Conditional Access policies

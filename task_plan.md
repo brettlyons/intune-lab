@@ -21,7 +21,8 @@ Complete a documentation-first Intune lab demonstrating device enrollment, polic
 - [x] Add screenshots to repo
 
 ## Next Session Tasks
-- [ ] Test automated VM deployment with autounattend.xml
+- [x] Test automated VM deployment with autounattend.xml (documented failures and solutions)
+- [ ] Verify xorriso-based ISO creation works
 - [ ] Create bash script for one-command VM provisioning
 - [ ] Investigate BitLocker on QEMU/KVM VMs with swtpm
 - [ ] Consider dynamic device groups for automatic policy assignment
