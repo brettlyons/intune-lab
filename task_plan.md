@@ -26,6 +26,7 @@ Complete a documentation-first Intune lab demonstrating device enrollment, polic
 - [x] Verify OOBE completes and MDM enrollment launches (works - only login required)
 - [x] Remove SetupAdmin account post-enrollment (Intune script created)
 - [x] Create dynamic device group for automatic policy assignment
+- [x] Add SPICE guest tools to unattended install for clipboard sharing
 - [ ] Create bash script for one-command VM provisioning
 - [ ] Investigate BitLocker on QEMU/KVM VMs with swtpm
 

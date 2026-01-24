@@ -131,12 +131,17 @@ sudo cp /home/blyons/intune-lab/Autounattend.xml /tmp/win11_mod/
 # 4. Add VirtIO drivers
 sudo cp -r /nix/store/*-virtio-win-*/{viostor,NetKVM} /tmp/win11_mod/
 
-# 5. Add drivers to $WinPEDriver$ for automatic loading during WinPE
+# 5. Add SPICE guest tools for clipboard/display integration
+# Download if not already present
+[ -f /tmp/spice-guest-tools.exe ] || curl -L -o /tmp/spice-guest-tools.exe https://www.spice-space.org/download/windows/spice-guest-tools/spice-guest-tools-latest.exe
+sudo cp /tmp/spice-guest-tools.exe /tmp/win11_mod/
+
+# 6. Add drivers to $WinPEDriver$ for automatic loading during WinPE
 sudo mkdir -p "/tmp/win11_mod/\$WinPEDriver\$"
 sudo cp -r /tmp/win11_mod/viostor/w11/amd64/* "/tmp/win11_mod/\$WinPEDriver\$/"
 sudo cp -r /tmp/win11_mod/NetKVM/w11/amd64/* "/tmp/win11_mod/\$WinPEDriver\$/"
 
-# 6. Create modified ISO with xorriso (NOT mkisofs - see "What Didn't Work")
+# 7. Create modified ISO with xorriso (NOT mkisofs - see "What Didn't Work")
 nix-shell -p xorriso --run "xorriso -as mkisofs \
     -iso-level 4 \
     -rock \
@@ -152,7 +157,7 @@ nix-shell -p xorriso --run "xorriso -as mkisofs \
     -o /home/blyons/intune-lab/Win11_unattended.iso \
     /tmp/win11_mod"
 
-# 7. Cleanup
+# 8. Cleanup
 sudo umount /tmp/win11_mnt
 sudo rm -rf /tmp/win11_mod /tmp/win11_mnt
 ```
@@ -185,7 +190,8 @@ After boot, Windows installs fully automatically:
 2. Loads VirtIO drivers for disk/network
 3. Partitions and installs Windows 11 Pro
 4. Creates SetupAdmin local account
-5. Presents Entra ID sign-in at first logon
+5. Installs SPICE guest tools (clipboard/display integration)
+6. Presents Entra ID sign-in at first logon
 
 Sign in with a work account (e.g., `testuser01@lyonsitlab.onmicrosoft.com`) to join Entra ID and auto-enroll in Intune. After login, the device automatically:
 - Joins Entra ID

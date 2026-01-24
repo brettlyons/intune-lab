@@ -156,10 +156,17 @@
                 <LogonCount>1</LogonCount>
             </AutoLogon>
 
-            <!-- Auto-launch Entra ID enrollment dialog (user enters credentials manually) -->
+            <!-- FirstLogonCommands run once as SetupAdmin -->
             <FirstLogonCommands>
+                <!-- Install SPICE guest tools for clipboard/display integration -->
                 <SynchronousCommand wcm:action="add">
                     <Order>1</Order>
+                    <CommandLine>powershell -Command "Get-Volume | Where-Object {$_.DriveType -eq 'CD-ROM'} | ForEach-Object { $installer = $_.DriveLetter + ':\spice-guest-tools.exe'; if (Test-Path $installer) { Start-Process $installer -ArgumentList '/S' -Wait } }"</CommandLine>
+                    <Description>Install SPICE guest tools silently</Description>
+                </SynchronousCommand>
+                <!-- Auto-launch Entra ID enrollment dialog (user enters credentials manually) -->
+                <SynchronousCommand wcm:action="add">
+                    <Order>2</Order>
                     <CommandLine>powershell -Command "Start-Sleep -Seconds 10; Start-Process 'ms-device-enrollment:?mode=mdm'"</CommandLine>
                     <Description>Launch Entra ID enrollment</Description>
                 </SynchronousCommand>
